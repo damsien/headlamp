@@ -103,6 +103,7 @@ class CustomResourceDefinition extends KubeObject<KubeCRD> {
       for (const versionItem of this.spec.versions) {
         if (!!versionItem.storage) {
           version = versionItem.name;
+          break;
         } else if (!version) {
           version = versionItem.name;
         }

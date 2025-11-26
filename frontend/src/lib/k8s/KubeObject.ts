@@ -31,6 +31,7 @@ import type { QueryParameters } from './api/v1/queryParameters';
 import type { ApiError } from './api/v2/ApiError';
 import { useKubeObject } from './api/v2/hooks';
 import { makeListRequests, useKubeObjectList } from './api/v2/useKubeObjectList';
+import type CustomResourceDefinition from './crd';
 import type { KubeEvent } from './event';
 import type { KubeMetadata, KubeMetadataCreate } from './KubeMetadata';
 
@@ -640,8 +641,22 @@ export class KubeObject<T extends KubeObjectInterface | KubeEvent = any> {
   static getBaseObject(): Omit<KubeObjectInterface, 'metadata'> & {
     metadata: Partial<KubeMetadata>;
   } {
+    let apiVersion: string;
+
+    // For custom resources, use the storage version from the CRD
+    if (
+      'customResourceDefinition' in this &&
+      this.customResourceDefinition &&
+      typeof (this.customResourceDefinition as any).getMainAPIGroup === 'function'
+    ) {
+      const [group, version] = (this.customResourceDefinition as any).getMainAPIGroup();
+      apiVersion = group ? `${group}/${version}` : version;
+    } else {
+      apiVersion = Array.isArray(this.apiVersion) ? this.apiVersion[0] : this.apiVersion;
+    }
+
     return {
-      apiVersion: Array.isArray(this.apiVersion) ? this.apiVersion[0] : this.apiVersion,
+      apiVersion,
       kind: this.kind,
       metadata: {
         name: '',
